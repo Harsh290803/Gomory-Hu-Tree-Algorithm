@@ -333,7 +333,166 @@ void sortListById(VertexList &set)
 }
 
 // ----------------------------------------------------------------------------
+// String representation of a vertex for reporting
 
+string vertexToStr(const Vertex *vertex)
+{
+    stringstream s;
+    s << "{";
+    if (vertex->group.size() == 0)
+    {
+        s << vertex->id << "}";
+        return s.str();
+    }
+    else
+    {
+        for (Vertex *v : vertex->group)
+        {
+            s << vertexToStr(v) << ",";
+        }
+        return s.str().substr(0, s.str().size() - 1) + "}";
+    }
+}
+
+// ----------------------------------------------------------------------------
+
+// String representation of a set of vertices for reporting
+
+string vertexListToStr(const VertexList &set)
+{
+    stringstream s;
+    s << "[ ";
+    for (Vertex *v : set)
+    {
+        s << vertexToStr(v) << ", ";
+    }
+    return s.str().substr(0, s.str().size() - 2) + " ]";
+}
+
+// Function to convert a matrix to a string representation
+string matrixToStr(const Matrix &m)
+{
+    int n = static_cast<int>(m.size());
+    stringstream s;
+    for (int i = 0; i < n; i++)
+    {
+        s << "    ";
+        for (int j = 0; j < n; j++)
+            s << setw(3) << m[i][j];
+        s << endl;
+    }
+    return s.str();
+}
+
+// Function to find the shortest path from s to t
+// It returns a queue formed during the search
+VertexList findPath(const VertexList &set, Vertex *s, Vertex *t)
+{
+    // Clear previous search markings
+    for (Vertex *v : set)
+    {
+        v->parent = nullptr;
+        v->flag = 0;
+    }
+
+    size_t i = 0;
+    VertexList queue;
+
+    // Add the starting vertex to the queue and mark it
+    s->flag = 1;
+    queue.push_back(s);
+
+    // Process the elements in the queue
+    while (i < queue.size())
+    {
+        // Add all adjacent vertices with available capacity to the queue
+        for (Edge *e : queue[i]->edges)
+        {
+            Vertex *v = e->vertex;
+            if (v->flag == 0 && e->c > 0)
+            {
+                v->parent = queue[i];
+                v->flag = 1;
+                queue.push_back(v);
+
+                // If the adjacent vertex is t, a shortest path is found
+                if (v == t)
+                    return queue;
+            }
+        }
+        // Move to the next vertex in the queue
+        i++;
+    }
+
+    return queue;
+}
+
+// Function to find the maximum flow and its min cut between vertices 0 and 1 in the set
+MinCut findMinCut(VertexList &set)
+{
+    MinCut result(set[0], set[1]);
+
+    for (;;)
+    {
+        // Find the shortest path between s and t
+        VertexList path = findPath(set, result.s, result.t);
+        if (result.t->parent == nullptr)
+            break;
+
+        // Calculate the minimum capacity along the path
+        int min_c = INT_MAX;
+        Vertex *v = result.t;
+        EdgeList edges;
+
+        
+
+        while (v->parent != nullptr)
+        {
+            edges.push_back(getEdge(v, v->parent));
+            Edge *e = getEdge(v->parent, v);
+            edges.push_back(e);
+            if (e->c < min_c)
+                min_c = e->c;
+            v = v->parent;
+        }
+
+        
+        v = result.t;
+        while (v->parent != nullptr)
+        {
+            Edge *e = getEdge(v->parent, v);
+            if (e->c == min_c){
+                cutEdges.push_back({vertexToStr(v->parent),vertexToStr(v)});
+            }
+            v = v->parent;
+        }
+
+
+        // Update the flow and capacities
+        result.f += min_c;
+        for (Edge *e : edges)
+        {
+            e->f += min_c;
+            e->c -= min_c;
+        }
+    }
+
+    // Find sets A and B from the min cut
+    result.B = findPath(set, result.t, result.s);
+    result.A = setMinus(set, result.B);
+
+    // Restore capacities after the search
+    for (Vertex *v : set)
+    {
+        for (Edge *e : v->edges)
+        {
+            e->c += e->f;
+            e->f = 0;
+        }
+    }
+
+    return result;
+}
 
 
 int main(int argc, char *argv[])
