@@ -213,6 +213,126 @@ void deleteEdge(Vertex *v1, Vertex *v2)
 // ----------------------------------------------------------------------------
 
 
+// Delete a vertex from a set with the removal of edges
+
+void deleteVertex(VertexList &set, Vertex *v)
+{
+    VertexList::iterator i = findVertex(set, v);
+    if (i == set.end())
+    {
+        return;
+    }
+
+    // Iterate through edges connected to the vertex
+    for (Edge *e : v->edges)
+    {
+        // Delete the reverse edge, then delete the direct edge
+        deleteEdge(e->vertex, v);
+        delete e;
+    }
+
+    // Delete the vertex
+    delete (*i);
+    set.erase(i);
+}
+
+// ----------------------------------------------------------------------------
+
+// Delete the entire graph (all vertices and edges in the set)
+
+void deleteVertexList(VertexList &set)
+{
+    for (Vertex *v : set)
+    {
+        for (Edge *e : v->edges)
+        {
+            delete e;
+        }
+        delete v;
+    }
+    set.clear();
+}
+
+// ----------------------------------------------------------------------------
+
+// Unpack groups in a set {{1, 2}, {3}} --> {1, 2, 3}
+
+VertexList extractGroups(const VertexList &set)
+{
+    VertexList result;
+
+    for (Vertex *v : set)
+    {
+        if (v->group.size() > 0)
+        {
+            for (Vertex *subv : v->group)
+            {
+                result.push_back(subv);
+            }
+        }
+        else
+        {
+            result.push_back(v);
+        }
+    }
+
+    return result;
+}
+
+// ----------------------------------------------------------------------------
+
+// Create an adjacency matrix from a set of vertices
+
+Matrix vertexListToMatrix(const VertexList &set)
+{
+    int n = static_cast<int>(set.size());
+    Matrix m(n, Row(n, 0));
+
+    // Number vertices in the flag field, then fill the matrix
+    for (int i = 0; i < n; i++)
+    {
+        set[i]->flag = i;
+    }
+
+    for (Vertex *v : set)
+    {
+        for (Edge *e : v->edges)
+        {
+            m[v->flag][e->vertex->flag] = e->c;
+        }
+    }
+
+    return m;
+}
+
+// ----------------------------------------------------------------------------
+
+// Sort the list by vertex id
+
+void sortListById(VertexList &set)
+{
+    size_t n = set.size();
+
+    for (size_t i = 0; i < n - 1; i++)
+    {
+        size_t k = i;
+        for (size_t j = i + 1; j < n; j++)
+        {
+            if (set[j]->id < set[k]->id)
+            {
+                k = j;
+            }
+        }
+        if (k != i)
+        {
+            Vertex *v = set[k];
+            set[k] = set[i];
+            set[i] = v;
+        }
+    }
+}
+
+// ----------------------------------------------------------------------------
 
 
 
