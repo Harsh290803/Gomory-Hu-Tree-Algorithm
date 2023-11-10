@@ -134,6 +134,85 @@ VertexList setMul(VertexList &set1, VertexList &set2)
     return result;
 }
 
+// ----------------------------------------------------------------------------
+
+// Find an edge in a list, returning an iterator (pointer)
+
+EdgeList::iterator findEdge(Vertex *v1, Vertex *v2)
+{
+    for (EdgeList::iterator i = v1->edges.begin(); i != v1->edges.end(); ++i)
+    {
+        if ((*i)->vertex == v2)
+        {
+            return i;
+        }
+    }
+    return v1->edges.end();
+}
+
+// ----------------------------------------------------------------------------
+
+// Create an edge V1 --[c]--> V2
+// If addReverse == true, V2 --[c]--> V1 is also created
+// If the edge already exists, c is added to its weight
+
+void addEdge(Vertex *v1, Vertex *v2, const int c, bool addReverse = true)
+{
+    EdgeList::iterator i = findEdge(v1, v2);
+    if (i != v1->edges.end())
+    {
+        (*i)->c += c;
+    }
+    else
+    {
+        v1->edges.push_back(new Edge(v2, c));
+    }
+
+    if (!addReverse)
+    {
+        return;
+    }
+
+    i = findEdge(v2, v1);
+    if (i != v2->edges.end())
+    {
+        (*i)->c += c;
+    }
+    else
+    {
+        v2->edges.push_back(new Edge(v1, c));
+    }
+}
+
+// ----------------------------------------------------------------------------
+
+// Get the edge (if it exists) from V1 to V2
+
+Edge *getEdge(Vertex *v1, Vertex *v2)
+{
+    EdgeList::iterator i = findEdge(v1, v2);
+    return (i == v1->edges.end() ? nullptr : *i);
+}
+
+// ----------------------------------------------------------------------------
+
+// Delete the edge from V1 to V2
+
+void deleteEdge(Vertex *v1, Vertex *v2)
+{
+    EdgeList::iterator i = findEdge(v1, v2);
+    if (i == v1->edges.end())
+    {
+        return;
+    }
+
+    delete (*i);
+    v1->edges.erase(i);
+}
+
+// ----------------------------------------------------------------------------
+
+
 
 
 
