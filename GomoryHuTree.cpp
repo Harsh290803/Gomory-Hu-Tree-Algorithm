@@ -493,7 +493,139 @@ MinCut findMinCut(VertexList &set)
 
     return result;
 }
+// Build the Gomory-Hu tree
+Matrix buildGomoryHuTree(const Matrix &g)
+{
+    VertexList Vg = VertexList();
+    VertexList Vt = VertexList();
 
+    size_t n = g.size();
+    for (size_t i = 0; i < n; i++)
+    {
+        Vg.push_back(new Vertex(i));
+        for (size_t j = 0; j < i; j++)
+        {
+            if (g[i][j] != 0)
+                addEdge(Vg[i], Vg[j], g[i][j]);
+        }
+    }
+
+    Vt.push_back(new Vertex(Vg));
+
+    cout << endl
+         << "Step 1: Vt= " << vertexListToStr(Vt) << endl
+         << endl;
+
+    for (;;)
+    {
+        cout << "---------------------------------------------------------------" << endl
+             << endl;
+
+        // Step 2: Select a group of vertices from Vt where more than 1 vertex exists
+        VertexList::iterator i = Vt.begin();
+        VertexList::iterator j = Vt.end();
+        while (i != j && (*i)->group.size() < 2)
+            i++;
+        if (i == j)
+            break;
+
+        Vertex *x = *i;
+
+        cout << "Step 2: X = " << vertexListToStr(x->group) << endl
+             << endl;
+
+        // Step 3: Build the graph G
+        VertexList G = VertexList();
+
+        for (Vertex *v : x->group)
+        {
+            v->parent = new Vertex(VertexList(1, v));
+            G.push_back(v->parent);
+        }
+
+        for (Edge *e : x->edges)
+        {
+            deleteEdge(e->vertex, x);
+            Vertex *z = new Vertex(extractGroups(findPath(Vt, e->vertex, x)));
+            addEdge(e->vertex, x, e->c, false);
+
+            for (Vertex *v : z->group)
+                v->parent = z;
+            G.push_back(z);
+        }
+
+        for (Vertex *z : G)
+        {
+            for (Vertex *v : z->group)
+            {
+                for (Edge *e : v->edges)
+                {
+                    if (z != e->vertex->parent)
+                        addEdge(z, e->vertex->parent, e->c, false);
+                }
+            }
+        }
+
+        cout << "Step 3: G = " << vertexListToStr(G) << endl
+             << endl;
+        cout << matrixToStr(vertexListToMatrix(G)) << endl
+             << endl;
+
+        // Step 4: Find the min cut with max flow in G
+        MinCut cut = findMinCut(G);
+        cut.A = extractGroups(cut.A);
+        cut.B = extractGroups(cut.B);
+
+        cout << "Step 4: s-t   = " << vertexToStr(cut.s) << "-" << vertexToStr(cut.t) << endl;
+        cout << "        max_f = " << cut.f << endl;
+        cout << "        A     = " << vertexListToStr(cut.A) << endl;
+        cout << "        B     = " << vertexListToStr(cut.B) << endl
+             << endl;
+
+        deleteVertexList(G);
+
+        // Step 5: Update the tree
+
+        Vertex *XA = new Vertex(setMul(x->group, cut.A));
+        Vertex *XB = new Vertex(setMul(x->group, cut.B));
+        addEdge(XA, XB, cut.f);
+
+        for (Edge *e : x->edges)
+        {
+            Vertex *v = e->vertex;
+            addEdge((findVertex(cut.A, v->group[0]) != cut.A.end() ? XA : XB), v, e->c);
+        }
+
+        Vt.insert(Vt.insert(i, XB), XA);
+        deleteVertex(Vt, x);
+
+        cout << "Step 5: Vt= " << vertexListToStr(Vt) << endl
+             << endl;
+        cout << matrixToStr(vertexListToMatrix(Vt)) << endl
+             << endl;
+    }
+
+    for (Vertex *v : Vt)
+    {
+        v->id = v->group[0]->id;
+        v->group.clear();
+    }
+
+    sortListById(Vt);
+    Matrix m = vertexListToMatrix(Vt);
+
+    cout << "Result:" << endl
+         << endl;
+    cout << "Vt= " << vertexListToStr(Vt) << endl
+         << endl;
+    cout << matrixToStr(m) << endl
+         << endl;
+
+    deleteVertexList(Vg);
+    deleteVertexList(Vt);
+
+    return m;
+}
 
 int main(int argc, char *argv[])
 {
