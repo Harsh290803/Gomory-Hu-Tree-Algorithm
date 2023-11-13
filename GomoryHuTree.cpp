@@ -627,6 +627,81 @@ Matrix buildGomoryHuTree(const Matrix &g)
     return m;
 }
 
+
+
+void findMinKCut(Matrix M, int k){
+
+    if(k == 1){
+        cout << 0 << endl;
+        return;
+    }
+    else if(k > M.size()){
+        cout << "k can not be greater than no. of nodes in a graph" << endl;
+        return;
+    }
+
+    vector<int> st;
+    set<pair<int,int>> x;
+    for(int i=0;i<M.size();i++){
+        for(int j=0;j<M[i].size();j++){
+            if(M[i][j] != 0){
+                if(x.find({i,j}) == x.end() && x.find({j,i}) == x.end()){
+                    st.push_back(M[i][j]);
+                    x.insert({i,j});
+                }
+            }
+        }
+    }
+
+    sort(st.begin(),st.end());
+    
+    int sum = 0;
+    int count = 0;
+    for(auto &x : st){
+        sum += x;
+        count++;
+        if(count == k - 1) break;
+    }
+
+    cout << "Min K cut for k = " << k << " is " << sum << endl;
+}
+
+bool dfs(int node, int tar, vector<int> &vis, Matrix &m, int &ans){
+    vis[node] = 1;
+    if(node == tar) return true;
+
+    for(int j=0;j<m[node].size();j++){
+        if(m[node][j] != 0){
+            if(!vis[j] && dfs(j,tar,vis,m,ans)){
+                ans = min(ans,m[node][j]);
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+
+void findMinCut_(Matrix m, int a, int b){
+    if(a < 0 || b < 0 || a >= m.size() || b >= m.size() || a == b){
+        printf("Enter valid nodes\n");
+        return;
+    }
+
+    int n = m.size();
+    int ans = INT_MAX;
+    vector<int> vis(n,0);
+    dfs(a,b,vis,m,ans);
+
+    cout << "Min cut between " << a << ' '  << "and " << b << ": " << ans << endl;
+
+    return;
+}
+
+
+
+
 int main(int argc, char *argv[])
 {
     // Check if the graph is undirected
